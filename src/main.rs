@@ -5,12 +5,13 @@ const CLEAR: &str = "\x1B[2J\x1B[1;1H";
 struct Progress<Iter> {
     iter: Iter,
     i: usize,
-    bound: Option<usize>
+    bound: Option<usize>,
+    delims: (char, char)
 }
 
 impl<Iter> Progress<Iter> {
     pub fn new(iter: Iter) -> Self {
-        Progress { iter, i: 0, bound: None }
+        Progress { iter, i: 0, bound: None, delims: ('[', ']') }
     }
 }
 
@@ -22,6 +23,14 @@ where Iter: ExactSizeIterator {
     }
 }
 
+impl<Iter> Progress<Iter> {
+    pub fn with_delims(mut self, delims: (char, char)) -> Self {
+        self.delims = delims;
+        self
+    }
+}
+
+
 impl<Iter> Iterator for Progress<Iter>
 where Iter: Iterator {
     type Item = Iter::Item;
@@ -30,9 +39,11 @@ where Iter: Iterator {
         print!("{}", CLEAR);
         match self.bound {
             Some(bound) =>
-                println!("[{}{}]",
+                println!("{}{}{}{}",
+                         self.delims.0,
                          "*".repeat(self.i),
-                         " ".repeat(bound - self.i)),
+                         " ".repeat(bound - self.i),
+                         self.delims.1),
             None =>
                 println!("{}", "*".repeat(self.i))
         };
@@ -58,11 +69,12 @@ fn expensive_calculation(_n: &i32) {
 }
 
 fn main() {
-    // for n in (0 ..).progress().with_bound() {
-    //     expensive_calculation(n);
-    // }
+    let brkts = ('<', '>');
+    for n in (0 ..).progress().with_delims(brkts) {
+        expensive_calculation(&n);
+    }
     let v = vec![1, 2, 3];
-    for n in v.iter().progress().with_bound() {
+    for n in v.iter().progress().with_bound().with_delims(brkts) {
         expensive_calculation(n);
     }
 }
